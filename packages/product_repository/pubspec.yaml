@@ -1,0 +1,23 @@
+name: product_repository
+description: "Repo that handles Products"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 0.0.1
+
+environment:
+  sdk: '>=3.5.0-236.0.dev <4.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore:
+  firebase_storage:
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

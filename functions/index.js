@@ -1,53 +1,93 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
 
-const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
+// const {onRequest} = require("firebase-functions/v2/https");
+// const logger = require("firebase-functions/logger");
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+// // Create and deploy your first functions
+// // https://firebase.google.com/docs/functions/get-started
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
+// // exports.helloWorld = onRequest((request, response) => {
+// //   logger.info("Hello logs!", {structuredData: true});
+// //   response.send("Hello from Firebase!");
+// // });
+
+// const functions = require("firebase-functions");
+// const Razorpay = require("razorpay");
+// const cors = require("cors")({ origin: true });
+
+// // Replace with your Razorpay keys
+// const razorpay = new Razorpay({
+//   key_id: "rzp_test_ls7IwqX7O8o1EY",
+//   key_secret: "x1lk02uKxAcL0YaJroVWDWLL",
 // });
 
-const functions = require("firebase-functions");
+// exports.createOrder = functions.https.onRequest((req, res) => {
+//   cors(req, res, async () => {
+//     if (req.method !== "POST") {
+//       return res.status(405).send("Method Not Allowed");
+//     }
+
+//     const { amount, currency } = req.body;
+
+//     const options = {
+//       amount: amount * 100, // paise
+//       currency: currency || "INR",
+//       receipt: "order_rcptid_" + Date.now(),
+//     };
+
+//     try {
+//       const order = await razorpay.orders.create(options);
+//       res.status(200).json(order);
+//     } catch (error) {
+//       console.error("Error creating Razorpay order", error);
+//       res.status(500).send("Error creating order");
+//     }
+//   });
+// });
+const { onRequest } = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
 const Razorpay = require("razorpay");
 const cors = require("cors")({ origin: true });
 
-// Replace with your Razorpay keys
+
+// ✅ Replace with your keys or use Firebase config
 const razorpay = new Razorpay({
-  key_id: "rzp_test_ls7IwqX7O8o1EY",
-  key_secret: "x1lk02uKxAcL0YaJroVWDWLL",
+  key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_ls7IwqX7O8o1EY",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "x1lk02uKxAcL0YaJroVWDWLL",
 });
 
-exports.createOrder = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+// ✅ v2 HTTPS Function
+exports.createOrder = onRequest(
+  {
+    region: "asia-south1",
+    cors: true, // native v2 cors
+    timeoutSeconds: 10,
+  },
+  async (req, res) => {
     if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
+      logger.warn("Only POST requests allowed");
+      return res.status(405).send("Use POST method");
     }
 
-    const { amount, currency } = req.body;
+    const { amount, currency = "INR" } = req.body;
+
+    if (!amount || amount <= 0) {
+      logger.warn("Invalid amount:", amount);
+      return res.status(400).send("Invalid amount");
+    }
 
     const options = {
-      amount: amount * 100, // paise
-      currency: currency || "INR",
-      receipt: "order_rcptid_" + Date.now(),
+      amount, // Amount in paise
+      currency,
+      receipt: `order_rcptid_${Date.now()}`,
     };
 
     try {
       const order = await razorpay.orders.create(options);
-      res.status(200).json(order);
+      logger.info("Order created:", order.id);
+      return res.status(200).json(order);
     } catch (error) {
-      console.error("Error creating Razorpay order", error);
-      res.status(500).send("Error creating order");
+      logger.error("Razorpay order creation failed", error);
+      return res.status(500).send("Error creating Razorpay order");
     }
-  });
-});
+  }
+);

@@ -14,7 +14,6 @@ class MyOrdersScreen extends StatefulWidget {
 }
 
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -57,7 +56,10 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             showModalBottomSheet(
               context: context,
-              isScrollControlled: true,
+              isScrollControlled:
+                  true, // keep this if you're using full height with keyboard
+              isDismissible: false, // prevents closing when tapped outside
+              enableDrag: false, // prevents swiping down to close
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
               ),
@@ -65,8 +67,34 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             );
           });
 
-          return const Scaffold(
-            body: Center(child: Text("Please login to view your orders")),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text("Please log in to view your orders"),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled:
+                          true, // keep this if you're using full height with keyboard
+                      isDismissible:
+                          false, // prevents closing when tapped outside
+                      enableDrag: false, // prevents swiping down to close
+                      shape: const RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(25)),
+                      ),
+                      builder: (context) => const LoginBottomSheet(),
+                    );
+                  },
+                  child: const Text("Login"),
+                ),
+              ],
+            ),
           );
         }
 

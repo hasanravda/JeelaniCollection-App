@@ -1,27 +1,139 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, sized_box_for_whitespace
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, sized_box_for_whitespace, unused_element
 
 import 'package:ecommerce/admin/blocs/upload_picture_bloc/upload_picture_bloc.dart';
 import 'package:ecommerce/admin/screens/add_product.dart';
 import 'package:ecommerce/components/widgets/product_tile.dart';
 import 'package:ecommerce/models/category.dart';
+import 'package:ecommerce/screens/cart/views/cart_screen.dart';
 import 'package:ecommerce/screens/category/category_page.dart';
 import 'package:ecommerce/screens/home/blocs/get_product_bloc/get_product_bloc.dart';
 import 'package:ecommerce/screens/home/views/app_bar.dart';
+import 'package:ecommerce/screens/login/screens/login_redirect_widget.dart';
+import 'package:ecommerce/screens/login/screens/profile_update_page.dart';
+import 'package:ecommerce/screens/order/my_orders.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:product_repository/product_repository.dart';
 import 'package:shimmer/shimmer.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0; // To track the currently selected item
+  // final GlobalKey<LoginRedirectWidgetState> _loginKey = GlobalKey();
+  late List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      // buildHomeContent(context), // Bcoz context cant be used in initState
+      CartScreen(),
+      MyOrdersScreen(),
+      // StreamBuilder<User?>(
+      //   stream: FirebaseAuth.instance.authStateChanges(),
+      //   builder: (context, snapshot) {
+      //     final user = snapshot.data;
+      //     if (user != null) {
+      //       return ProfileUpdatePage(
+      //         phoneNumber: user.phoneNumber ?? '',
+      //         uid: user.uid,
+      //       );
+      //     } else if (snapshot.connectionState == ConnectionState.waiting) {
+      //       return const Center(child: CircularProgressIndicator());
+      //     } else if (snapshot.hasError) {
+      //       return Center(child: Text('Error: ${snapshot.error}'));
+      //     } else {
+      //       return const LoginRedirectWidget();
+      //       // return Container();
+      //     }
+      //   },
+      // ),
+      _buildProfileScreen()
+    ]; // Initial fetch of products
+    context.read<GetProductBloc>().add(GetProduct());
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   Future<void> _refreshProducts(BuildContext context) async {
     context.read<GetProductBloc>().add(GetProduct());
   }
 
+  Widget _buildProfileScreen() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const LoginRedirectWidget();
+    return ProfileUpdatePage(
+      phoneNumber: user.phoneNumber ?? '',
+      uid: user.uid,
+    );
+  }
+
+  // Widget _buildPageForIndex(int index) {
+  //   switch (index) {
+  //     case 0:
+  //       return buildHomeContent(context);
+  //     case 1:
+  //       return CartScreen();
+  //     case 2:
+  //       return MyOrdersScreen();
+  //     // case 3:R
+  //     //   return _buildUserTab(context);
+  //     default:
+  //       return buildHomeContent(context); // Default to home content
+  //   }
+  // }
+
+  // bool _hasShownLoginSheet = false;
+
+// Widget _buildUserTab(BuildContext context) {
+//   return StreamBuilder<User?>(
+//     stream: FirebaseAuth.instance.authStateChanges(),
+//     builder: (context, snapshot) {
+//       final user = snapshot.data;
+
+//       if (snapshot.connectionState == ConnectionState.waiting) {
+//         return const Center(child: CircularProgressIndicator());
+//       }
+
+//       if (user != null) {
+//         _hasShownLoginSheet = false; // Reset when user is logged in
+//         return ProfileUpdatePage(
+//           phoneNumber: user.phoneNumber ?? '',
+//           uid: user.uid,
+//         );
+//       } else {
+//         if (!_hasShownLoginSheet) {
+//           // ✅ Only show once
+//           WidgetsBinding.instance.addPostFrameCallback((_) {
+//             if (mounted) {
+//               // LoginRedirectWidget.showLoginSheet(context);
+//             }
+//           });
+//           _hasShownLoginSheet = true;
+//         }
+
+//         return const LoginRedirectWidget();
+//       }
+//     },
+//   );
+// }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    // final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -40,34 +152,79 @@ class HomeScreen extends StatelessWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: appBar(context),
       backgroundColor: Colors.white,
-      body: RefreshIndicator(
-        onRefresh: () => _refreshProducts(context),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
-            child: Column(
-              children: [
-                _buildCategorySection(),
-                const SizedBox(height: 14),
-                _buildPopularSection(),
-                const SizedBox(height: 14),
 
-                // Products list
-                BlocBuilder<GetProductBloc, GetProductState>(
-                  builder: (context, state) {
-                    if (state is GetProductSuccess) {
-                      return _buildProductGrid(screenWidth, state.products);
-                    } else if (state is GetProductLoading) {
-                      return _buildProductShimmer(screenWidth);
-                    } else {
-                      return const Center(
-                        child: Text("An error has occurred ..."),
-                      );
-                    }
-                  },
-                )
-              ],
-            ),
+      // body: buildHomeContent(context),
+      // body: _buildPageForIndex(_selectedIndex),
+      body: [
+        buildHomeContent(context),
+        ..._pages, // Use the selected page based on index
+      ][_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        // elevation: 1,
+        selectedItemColor: Colors.blue,
+        showSelectedLabels: true,
+        unselectedItemColor: Colors.grey,
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset('assets/icons/home.svg'),
+            label: 'Home',
+          ),
+          // BottomNavigationBarItem(
+          //   icon: SvgPicture.asset('assets/icons/search.svg'),
+          //   label: 'Search',
+          // ),
+          BottomNavigationBarItem(
+            // icon: SvgPicture.asset('assets/icons/search.svg'),
+            icon: Icon(CupertinoIcons.cart),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset('assets/icons/receipt.svg'),
+            label: 'Orders',
+          ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset('assets/icons/person.svg'),
+            // icon: Icon(CupertinoIcons.person),
+            label: 'User',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildHomeContent(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return RefreshIndicator(
+      onRefresh: () => _refreshProducts(context),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
+          child: Column(
+            children: [
+              _buildCategorySection(),
+              const SizedBox(height: 14),
+              _buildPopularSection(),
+              const SizedBox(height: 14),
+
+              // Products list
+              BlocBuilder<GetProductBloc, GetProductState>(
+                builder: (context, state) {
+                  if (state is GetProductSuccess) {
+                    return _buildProductGrid(screenWidth, state.products);
+                  } else if (state is GetProductLoading) {
+                    return _buildProductShimmer(screenWidth);
+                  } else {
+                    return const Center(
+                      child: Text("An error has occurred ..."),
+                    );
+                  }
+                },
+              )
+            ],
           ),
         ),
       ),
@@ -157,7 +314,8 @@ class HomeScreen extends StatelessWidget {
                     bottom: 8,
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      color: Colors.black.withOpacity(0.6),
+                      // color: Colors.black.withOpacity(0.7),
+                      color: Colors.black54,
                       child: Text(
                         category.title,
                         style: TextStyle(
@@ -167,7 +325,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                ],   
+                ],
               ),
             ),
           );

@@ -9,6 +9,14 @@ part 'user_state.dart';
 
 class UserBloc extends Bloc<UserEvent, UserState> {
   UserBloc() : super(UserInitial()) {
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        add(CheckUserLogin());
+      } else {
+        add(UserLoggedOut());
+      }
+    });
+
     on<CheckUserLogin>(_onCheckUserLogin);
     on<UserLoggedIn>(_onUserLoggedIn);
     on<UserLoggedOut>(_onUserLoggedOut);
@@ -26,24 +34,34 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           .get();
       // Check if user document exists
       if (userDoc.exists) {
-        final userModel = UserModel.fromMap(userDoc.data()!);
-        emit(UserAuthenticated(userModel));
+        final data = userDoc.data();
+
+        // Check if profile fields are filled
+        final hasProfile = data?['name'] != null &&
+            data?['address'] != null &&
+            data?['city'] != null &&
+            data?['pincode'] != null;
+
+        if (hasProfile) {
+          final userModel = UserModel.fromMap(data!);
+          emit(UserAuthenticated(userModel));
+        } else {
+          emit(UserProfileIncomplete(user)); // Profile not filled
+        }
       } else {
-        emit(UserUnauthenticated());
+        emit(UserProfileIncomplete(user)); // User document does not exist
       }
     } else {
-      emit(UserUnauthenticated());
+      emit(UserUnauthenticated()); // No user logged in
     }
   }
 
   void _onUserLoggedIn(UserLoggedIn event, Emitter<UserState> emit) {
-    emit(UserAuthenticated(event.user));  
+    emit(UserAuthenticated(event.user));
   }
 
   void _onUserLoggedOut(UserLoggedOut event, Emitter<UserState> emit) async {
     await FirebaseAuth.instance.signOut();
     emit(UserUnauthenticated());
   }
-  
-
 }

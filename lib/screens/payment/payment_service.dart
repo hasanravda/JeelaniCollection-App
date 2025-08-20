@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'package:http/http.dart' as http;
 import 'package:razorpay_flutter/razorpay_flutter.dart' as mobile;
 import 'package:flutter/foundation.dart';
 import 'package:razorpay_web/razorpay_web.dart' as web;
 
 class PaymentService {
-  late mobile.Razorpay _razorpay;
+  final mobile.Razorpay _razorpay = mobile.Razorpay();
   late web.Razorpay _web;
 
   Function(mobile.PaymentSuccessResponse)? _mobileSuccess;
@@ -46,19 +48,42 @@ class PaymentService {
     // For web, callbacks are handled directly in openCheckout method
   }
 
-  void openCheckout({
+  Future<String> createOrder({required double amount}) async {
+    // Create an order with our firebase function
+    final url = Uri.parse("https://asia-south1-ecommerce-50a07.cloudfunctions.net/createOrder");
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'amount': (amount * 100).toInt(), // Amount in paise
+        'currency': 'INR',
+      })
+    );
+
+    final data = jsonDecode(response.body);
+    return data['id']; // Return the order ID
+    
+  }
+
+  Future<void> openCheckout({
     required double amount,
     required String name,
     required String description,
     required String contact,
     required String email,
-  }) {
+  }) async {
+    final orderId = await createOrder(amount: amount); 
     var options = {
+
       'key': 'rzp_test_ls7IwqX7O8o1EY',
       'amount': amount * 100, // Amount in paise
       'currency': "INR",
       'name': name, // Your business name
       'description': description, // Product description
+      'order_id': orderId, // Order ID from your backend
       'prefill': {
         'contact': contact,
         'email': email,
@@ -70,16 +95,12 @@ class PaymentService {
 
     // Open the Razorpay checkout
     try {
-      if (kIsWeb) {
-        // Web platform - use flutter_web with stored callbacks
-        _web.open(options);
-      } else {
-        _razorpay.open(options);
-      }
+      kIsWeb ? _web.open(options) : _razorpay.open(options);
     } catch (e) {
       // Handle any errors that occur while opening the checkout
       log("Error opening Razorpay checkout: $e");
     }
+    return;
   }
 
   void dispose() {

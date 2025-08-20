@@ -1,5 +1,8 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerce/screens/cart/bloc/cart_bloc.dart';
 import 'package:ecommerce/screens/login/screens/login_bottomsheet.dart';
+import 'package:ecommerce/screens/login/screens/profile_update_page.dart';
 // import 'package:ecommerce/screens/login/screens/login_bottomsheet.dart';
 import 'package:ecommerce/screens/payment/review_order.dart';
 import 'package:ecommerce/user/bloc/user_bloc.dart';
@@ -108,7 +111,7 @@ class CheckoutCardContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   // Handle if cart is empty
                   final cartState = context.read<CartBloc>().state;
                   if (cartState is CartLoaded && cartState.cartItems.isEmpty) {
@@ -118,30 +121,8 @@ class CheckoutCardContent extends StatelessWidget {
                     return;
                   }
 
-                  final userState = context.read<UserBloc>().state;
-                  final user = FirebaseAuth.instance.currentUser;
-
-                  if (user != null && userState is UserAuthenticated) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Proceeding to Checkout")),
-                    );
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PaymentScreen(),
-                      ),
-                    );
-                  } else if (userState is UserUnauthenticated) {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(25.0)),
-                      ),
-                      builder: (context) => const LoginBottomSheet(),
-                    );
-                  }
+                  // 2️⃣  Decide next step based on auth & profile
+                  await _handleCheckout(context);
                 },
                 child: const Text(
                   "Check Out",
@@ -155,3 +136,149 @@ class CheckoutCardContent extends StatelessWidget {
     );
   }
 }
+
+Future<void> _handleCheckout(BuildContext context) async {
+  final userState = context.read<UserBloc>().state;
+  final firebaseUser = FirebaseAuth.instance.currentUser;
+
+  // 🔴 Not logged in at all → show login sheet
+  if (firebaseUser == null || userState is UserUnauthenticated) {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (_) => const LoginBottomSheet(),
+    );
+    return;
+  }
+
+  // 🔍 Check Firestore profile
+  final doc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(firebaseUser.uid)
+      .get();
+
+  final hasProfile = doc.exists &&
+      (doc.data()?['name'] ?? '').toString().isNotEmpty &&
+      (doc.data()?['address'] ?? '').toString().isNotEmpty &&
+      (doc.data()?['city'] ?? '').toString().isNotEmpty &&
+      (doc.data()?['pincode'] ?? '').toString().isNotEmpty;
+
+  if (!hasProfile) {
+    // 🚧 Take user to profile page and wait
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileUpdatePage(
+          phoneNumber: firebaseUser.phoneNumber ?? '',
+          uid: firebaseUser.uid,
+        ),
+      ),
+    );
+
+    // 🔄 Re‑check profile once they return
+    final refreshed = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (!(refreshed.exists &&
+        (refreshed.data()?['name'] ?? '').toString().isNotEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Profile not completed. Please try again.")),
+      );
+      return;
+    }
+  }
+
+  // ✅ All good → go to payment
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Proceeding to Checkout")),
+  );
+  if (context.mounted) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PaymentScreen()),
+    );
+  }
+}
+
+
+// //
+//                   final userState = context.read<UserBloc>().state;
+//                   final user = FirebaseAuth.instance.currentUser;
+
+//                   if (user != null && userState is UserAuthenticated) {
+//                     final docSnapshot = await FirebaseFirestore.instance
+//                         .collection('users')
+//                         .doc(user.uid)
+//                         .get();
+//                     if (docSnapshot.exists) {
+//                       // Proceed to checkout
+//                       ScaffoldMessenger.of(context).showSnackBar(
+//                         const SnackBar(content: Text("Proceeding to Checkout")),
+//                       );
+//                       Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                           builder: (context) => const PaymentScreen(),
+//                         ),
+//                       );
+
+//                       log("User exists: ${user.email}");
+//                     } else {
+//                       // ⛳️ Navigate to profile update page (important)
+//                       await Navigator.push(
+//                         context,
+//                         MaterialPageRoute(
+//                           builder: (context) => ProfileUpdatePage(
+//                             phoneNumber: user.phoneNumber ?? " ",
+//                             uid: user.uid,
+//                           ),
+//                         ),
+//                       );
+//                       // 🔁 After returning from Profile page, re-check the user doc
+//                       final newSnapshot = await FirebaseFirestore.instance
+//                           .collection('users')
+//                           .doc(user.uid)
+//                           .get();
+
+//                       if (newSnapshot.exists) {
+//                         // ✅ Now go to checkout
+//                         Navigator.push(
+//                           context,
+//                           MaterialPageRoute(
+//                             builder: (context) => const PaymentScreen(),
+//                           ),
+//                         );
+//                       } else {
+//                         // ❌ Still not saved
+//                         ScaffoldMessenger.of(context).showSnackBar(
+//                           const SnackBar(
+//                               content: Text(
+//                                   "Profile not completed. Please try again.")),
+//                         );
+//                       }
+
+//                       log("User profile created? ${newSnapshot.exists}");
+//                     }
+//                   } else if (userState is UserUnauthenticated) {
+//                     showModalBottomSheet(
+//                       context: context,
+//                       isScrollControlled: true,
+//                       isDismissible:
+//                           false, // prevents closing when tapped outside
+//                       enableDrag: false, // prevents swiping down to close
+//                       shape: const RoundedRectangleBorder(
+//                         borderRadius:
+//                             BorderRadius.vertical(top: Radius.circular(25.0)),
+//                       ),
+//                       builder: (context) => const LoginBottomSheet(),
+//                     );
+//                   }
+//                 },

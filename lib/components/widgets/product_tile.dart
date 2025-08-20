@@ -3,6 +3,7 @@ import 'package:ecommerce/components/widgets/product_price.dart';
 import 'package:ecommerce/components/widgets/product_shimmer.dart';
 import 'package:ecommerce/screens/detail_page/views/detail_screen.dart';
 import 'package:flutter/material.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:product_repository/product_repository.dart';
 
 class ProductTile extends StatelessWidget {
@@ -26,6 +27,14 @@ class ProductTile extends StatelessWidget {
             builder: (context) => DetailScreen(product: product!),
           ),
         );
+        // if(product!.pId == null) {
+        //   // Handle case where product ID is null
+        //   ScaffoldMessenger.of(context).showSnackBar(
+        //     const SnackBar(content: Text('Product ID is not available')),
+        //   );
+        //   return; 
+        // } 
+        // context.go('/product/${product!.pId}', extra: product!);
       },
       child: Container(
         decoration: BoxDecoration(

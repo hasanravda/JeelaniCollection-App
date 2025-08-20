@@ -1,10 +1,14 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'package:ecommerce/no_internet_screen.dart';
+// import 'package:ecommerce/routes/app_route_config.dart';
 import 'package:ecommerce/screens/home/blocs/get_product_bloc/get_product_bloc.dart';
 import 'package:ecommerce/screens/home/views/home_screen.dart';
+// import 'package:ecommerce/screens/home/views/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:product_repository/product_repository.dart';
 
@@ -25,29 +29,33 @@ class _MyAppState extends State<MyApp> {
     _checkInternetConnection();
     // Listen for network status changes
     Connectivity().onConnectivityChanged.listen((result) {
-      if (result == ConnectivityResult.none) {
-        setState(() {
-          isConnected = false;
-        });
-      } else {
-        setState(() {
-          isConnected = true;
-        });
-      }
+      setState(() {
+        isConnected = result != ConnectivityResult.none;
+      });
     });
+
   }
 
   Future<void> _checkInternetConnection() async {
-    var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
-      setState(() {
-        isConnected = false;
-      });
-    } else {
-      setState(() {
-        isConnected = true;
-      });
-    }
+    final result = await Connectivity().checkConnectivity();
+    setState(() {
+      isConnected = result != ConnectivityResult.none;
+    });
+    // var connectivityResult = await Connectivity().checkConnectivity();
+    // if (connectivityResult == ConnectivityResult.none) {
+    //   debugPrint("No connection");
+    //   setState(() {
+    //     isConnected = false;
+    //   });
+    // }
+
+    //  else {
+    //   debugPrint("connected");
+    //   setState(() {
+    //     isConnected = true;
+    //   });
+    // }
+    
   }
 
   @override
@@ -57,6 +65,7 @@ class _MyAppState extends State<MyApp> {
         FirebaseProductRepo(), // Initialize with your repository
       )..add(GetProduct()), // Add the initial event to fetch products
       child: MaterialApp(
+        // routerConfig: isConnected? MyAppRouter().router:_noInternetRouter, // Initialize your router
         title: 'Jeelani Collection',
         theme: ThemeData(
           fontFamily: 'Poppins',
@@ -72,12 +81,16 @@ class _MyAppState extends State<MyApp> {
                   } else if (state is GetProductLoading) {
                     return const HomeScreen(); // Keep showing home while loading products
                   } else if (state is GetProductFailure) {
-                    return _buildFailureUI(context); // Show failure UI with retry
+                    return _buildFailureUI(
+                        context); // Show failure UI with retry
                   }
-                  return const Center(child: CircularProgressIndicator()); // Default loading state
+                  return const Center(
+                      child:
+                          CircularProgressIndicator()); // Default loading state
                 },
               )
-            : _buildFailureUI(context), // Show failure UI when no internet connection
+            : _buildFailureUI(
+                context), // Show failure UI when no internet connection
       ),
     );
   }
@@ -110,9 +123,9 @@ class _MyAppState extends State<MyApp> {
                   _checkInternetConnection();
                 },
                 style: ElevatedButton.styleFrom(
-                  
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 ),
                 child: const Text(
                   'Retry',
@@ -126,3 +139,14 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+
+// separate fallback GoRouter when there's no internet
+// final _noInternetRouter = GoRouter(
+//   routes: [
+//     GoRoute(
+//       path: '/',
+//       builder: (_, __) =>
+//           NoInternetScreen(), // Show failure UI when no internet connection
+//     )
+//   ],
+// );

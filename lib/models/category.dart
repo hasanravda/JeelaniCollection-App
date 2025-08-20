@@ -17,7 +17,7 @@ List<Category> categories = [
   ),
   Category(
     title: 'Co-ord Set', 
-    imageUrl: 'https://mirchi-fashion-bucket.s3.ap-south-1.amazonaws.com/Kurti%20&%20Kurta%20Set/K9665A.jpg',
+    imageUrl: 'https://byshree.com/cdn/shop/files/Sub-banner_category-coord_sets.jpg?v=1741155798&width=800'
   ),
   Category(
     title: 'Tops', 

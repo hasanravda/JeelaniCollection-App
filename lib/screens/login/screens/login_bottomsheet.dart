@@ -1,11 +1,14 @@
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerce/screens/login/screens/profile_page.dart';
+import 'package:ecommerce/models/user_model.dart';
+import 'package:ecommerce/screens/login/screens/profile_update_page.dart';
 import 'package:ecommerce/screens/login/services/phone_auth_service.dart';
+import 'package:ecommerce/user/bloc/user_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 final _phoneAuthService = PhoneAuthService();
 
@@ -48,6 +51,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
       _phoneAuthService.verifyPhoneNumber(
           phoneNumber: _phoneController.text,
           onCodeSent: (verificationId, resendToken) {
+            if (!mounted) return;
             setState(() {
               _verificationId = verificationId;
               otpSent = true;
@@ -74,6 +78,8 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
             setState(() {
               _isLoading = false;
             });
+            log("Verification failed in _sendotp: ${e.code} - ${e.message}");
+
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text("Failed: ${e.message}")));
           },
@@ -101,50 +107,60 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
         _isLoading = true;
       });
       try {
-          final userCredential = await _phoneAuthService.signInWithOtp(
-              verificationId: _verificationId!,
-              smsCode: smsCode
-            );
+        final userCredential = await _phoneAuthService.signInWithOtp(
+            verificationId: _verificationId!, smsCode: smsCode);
+        log("Verification ID: $_verificationId");
+        log("SMS Code entered: $smsCode");
 
-          final user = userCredential.user;
-          if(user != null) {
-            // User is signed in
-            final uid = user.uid;
+        final user = userCredential.user;
+        if (user != null) {
+          // User is signed in
+          final uid = user.uid;
 
-            final docSnapshot = await FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .get();
-            
-            if (docSnapshot.exists) {
-              // ✅ Existing user: go to payment screen (or home)
-              // Navigator.pushReplacement(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => CartScreen()), // you can change destination
-              // );
-              Navigator.pop(context); // Close the bottom sheet
-            } else{
-              // 🆕 New user: redirect to profile page to fill name, address etc.
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfilePage(
-                    phoneNumber: user.phoneNumber ?? '', // Pass phone number
-                    uid: uid,
-                  ),
+          final docSnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .get();
+
+          // Profile Page problem is here
+          if (docSnapshot.exists) {
+            // ✅ Existing user: go to payment screen (or home)
+            // Navigator.pushReplacement(
+            //   context,
+            //   MaterialPageRoute(builder: (_) => CartScreen()), // you can change destination
+            // );
+            // Refresh screen
+            Navigator.pop(context); // Close the bottom sheet
+            // context.read()<UserBloc>().add(UserLoggedIn(
+            //   UserModel.fromMap(docSnapshot.data()!),
+            // ));
+            // context.read<UserBloc>().add(UserLoggedIn(FirebaseAuth.instance.currentUser!));
+
+
+          } else {
+            // 🆕 New user: redirect to profile page to fill name, address etc.
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileUpdatePage(
+                  phoneNumber: user.phoneNumber ?? '', // Pass phone number
+                  uid: uid,
                 ),
-              );
-            }
-
-          } 
+              ),
+            );
+          }
+        }
       } catch (e) {
+        log("OTP verification failed: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("OTP Verification Failed: $e")),
         );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,7 +175,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        top: 20,
+        top: 15,
         left: 20,
         right: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
@@ -171,9 +187,24 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
             const SizedBox(height: 8),
 
             // Optional: Replace with your asset if needed
-            Image.asset(
-              'assets/icons/jeelani-logo-full.png', // Add your logo in assets
-              height: 30,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 24), // Placeholder for symmetry
+                Image.asset(
+                  'assets/icons/jeelani-logo-full.png',
+                  height: 35,
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),

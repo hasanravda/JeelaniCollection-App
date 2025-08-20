@@ -9,6 +9,11 @@ sealed class UserState extends Equatable {
 
 final class UserInitial extends UserState {}
 
+class UserProfileIncomplete extends UserState {
+  final User firebaseUser;
+  const UserProfileIncomplete(this.firebaseUser);
+}
+
 class UserAuthenticated extends UserState {
   final UserModel user;
   const UserAuthenticated(this.user);

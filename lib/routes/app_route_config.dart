@@ -39,6 +39,7 @@ class MyAppRouter {
         name: 'productDetail',
         path: '/product/:pid',
         builder: (context, state) {
+          // fetch product from productId
           final product = state.extra as Product;
           // Pass productId to the details screen
           return DetailScreen(product: product);

@@ -42,7 +42,7 @@ class _MyOrdersContentState extends State<MyOrdersContent> {
             return _buildShimmer();
           }
           if (snapshot.hasError) {
-            print("Error fetching orders: ${snapshot.error}");
+            debugPrint("Error fetching orders: ${snapshot.error}");
             return const Center(child: Text("Something went wrong."));
           }
           final orders = snapshot.data ?? [];

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +8,7 @@ import 'package:ecommerce/models/order_model.dart';
 import 'package:ecommerce/models/user_model.dart';
 import 'package:ecommerce/screens/cart/bloc/cart_bloc.dart';
 import 'package:ecommerce/screens/cart/views/cart_screen.dart';
+import 'package:ecommerce/screens/login/screens/profile_update_page.dart';
 import 'package:ecommerce/screens/order/order_success_screen.dart';
 import 'package:ecommerce/screens/payment/payment_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -32,12 +35,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     if (kIsWeb) {
       _paymentService.init(
-        onWebSuccess: (response) =>
-            _handleWebPaymentSuccess(response),
-        onWebError: (response) =>
-            _handleWebPaymentError(response),
-        onWebExternalWallet: (response) =>
-            _handleWebExternalWallet(response),
+        onWebSuccess: (response) => _handleWebPaymentSuccess(response),
+        onWebError: (response) => _handleWebPaymentError(response),
+        onWebExternalWallet: (response) => _handleWebExternalWallet(response),
       );
     } else {
       _paymentService.init(
@@ -63,7 +63,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   // Web platform callbacks
   void _handleWebPaymentSuccess(web.PaymentSuccessResponse response) {
     debugPrint('Web SUCCESS: ${response.paymentId}');
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Payment successful: ${response.paymentId}')),
     );
@@ -76,15 +76,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   void _handleWebPaymentError(web.PaymentFailureResponse response) {
     debugPrint('Web ERROR: ${response.message}');
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Payment failed: ${response.message}')),
     );
-    
+
     setState(() {
       _isProcessing = false;
     });
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CartScreen()),
@@ -93,15 +93,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   void _handleWebExternalWallet(web.ExternalWalletResponse response) {
     debugPrint('Web WALLET: ${response.walletName}');
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('External wallet: ${response.walletName}')),
     );
-    
+
     setState(() {
       _isProcessing = false;
     });
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CartScreen()),
@@ -166,24 +166,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Future<void> _saveWebOrder (
-      web.PaymentSuccessResponse response, CartLoaded cartState) async{
+  Future<void> _saveWebOrder(
+      web.PaymentSuccessResponse response, CartLoaded cartState) async {
     final cartItems = cartState.cartItems;
     final orderItems = cartItems.map((item) => item).toList();
     final userId = FirebaseAuth.instance.currentUser!.uid;
 
-    final userSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .get();
+    final userSnapshot =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
     String address = "User Address"; // Default address
     if (userSnapshot.exists) {
-    final userData = userSnapshot.data();
-    address =
-        "${userData?['address']}, ${userData?['city']}, ${userData?['state']} - ${userData?['pincode']}";
-  }
-    
+      final userData = userSnapshot.data();
+      address =
+          "${userData?['address']}, ${userData?['city']}, ${userData?['state']} - ${userData?['pincode']}";
+    }
 
     final order = OrderModel(
       userId: userId,
@@ -192,7 +189,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       totalAmount: cartState.finalTotal
           .toInt(), // Calculate total amount based on order items
       orderDate: DateTime.now(),
-      address: address, 
+      address: address,
       items: orderItems,
       paymentId: response.paymentId,
       paymentMethod: "Razorpay",
@@ -312,6 +309,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             OutlinedButton(
                               onPressed: () {
                                 // TODO: Navigate to address change screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProfileUpdatePage(
+                                      phoneNumber: user.phoneNumber,
+                                      uid: user.uid,
+                                    ),
+                                  ),
+                                );
                               },
                               child: const Text("Change or add address"),
                             ),

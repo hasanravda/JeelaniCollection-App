@@ -1,4 +1,4 @@
-// import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce/components/widgets/product_price.dart';
 import 'package:ecommerce/components/widgets/product_shimmer.dart';
 import 'package:ecommerce/screens/detail_page/views/detail_screen.dart';
@@ -27,14 +27,6 @@ class ProductTile extends StatelessWidget {
             builder: (context) => DetailScreen(product: product!),
           ),
         );
-        // if(product!.pId == null) {
-        //   // Handle case where product ID is null
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     const SnackBar(content: Text('Product ID is not available')),
-        //   );
-        //   return; 
-        // } 
-        // context.go('/product/${product!.pId}', extra: product!);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -43,41 +35,17 @@ class ProductTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // CachedNetworkImage(
-            //   imageUrl: product!.image,
-            //   errorWidget: (context, url, error) => Container(
-            //     color: Colors.grey[200],
-            //     height: 230,
-            //     // child: const Center(
-            //     //   child: Icon(
-            //     //     Icons.broken_image,
-            //     //     color: Colors.grey,
-            //     //     size: 50,
-            //     //   ),
-            //     // ),
-            //   ),
-            // ),
-
-            // Using Image.network with error and loading handling
-            Image.network(
-              product!.image,
-              errorBuilder: (context, error, stackTrace) {
+            // Using CachedNetworkImage instead of Image.network for optimization
+            CachedNetworkImage(
+              imageUrl: product!.image,
+              errorWidget: (context, url, error) {
                 // Handling case where image fails to load
                 return Container(
                   color: Colors.grey[200], // Background color on failure
                   height: 230, // Height of the image container
-                  // child: const Center(
-                  //   child: Icon(
-                  //     Icons.hide_image,
-                  //     color: Colors.grey,
-                  //     size: 50,
-                  //   ),
-                  // ),
                 );
               },
             ),
-
 
             const SizedBox(height: 4),
             Padding(

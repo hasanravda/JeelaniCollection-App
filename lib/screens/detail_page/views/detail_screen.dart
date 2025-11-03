@@ -760,6 +760,7 @@
 //     ),
 //   );
 // }
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ecommerce/components/widgets/product_price.dart';
 import 'package:ecommerce/components/widgets/zoomable_image.dart';
 import 'package:ecommerce/screens/cart/bloc/cart_bloc.dart';
@@ -964,57 +965,61 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   );
                 },
-                child: Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(widget.product.image),
-                      fit: BoxFit.fill,
-                      onError: (exception, stackTrace) {
-                        Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 50,
-                              color: Colors.grey,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: widget.product.image,
+                        fit: BoxFit.fill,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorWidget: (context, url, error) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.1),
-                        ],
+                          );
+                        },
                       ),
                     ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 16,
-                          right: 16,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Icon(
-                              Icons.zoom_in,
-                              size: 20,
-                              color: Colors.grey,
-                            ),
-                          ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.1),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.zoom_in,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1309,15 +1314,15 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                       );
                     },
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height * 0.86,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(widget.product.image),
+                    child: Stack(
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: widget.product.image,
                           fit: BoxFit.fill,
-                          onError: (exception, stackTrace) {
-                            Container(
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height * 0.86,
+                          errorWidget: (context, url, error) {
+                            return Container(
                               color: Colors.grey[200],
                               child: const Center(
                                 child: Icon(
@@ -1329,39 +1334,35 @@ class _DetailScreenState extends State<DetailScreen> {
                             );
                           },
                         ),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.1),
-                            ],
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.1),
+                              ],
+                            ),
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: 16,
-                              right: 16,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Icon(
-                                  Icons.zoom_in,
-                                  size: 20,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ],
+                            child: const Icon(
+                              Icons.zoom_in,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

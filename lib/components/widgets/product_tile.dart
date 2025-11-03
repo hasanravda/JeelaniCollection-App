@@ -35,16 +35,16 @@ class ProductTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Using CachedNetworkImage instead of Image.network for optimization
+            // Using CachedNetworkImage (no fixed size, no BoxFit to avoid cropping)
             CachedNetworkImage(
               imageUrl: product!.image,
-              errorWidget: (context, url, error) {
-                // Handling case where image fails to load
-                return Container(
-                  color: Colors.grey[200], // Background color on failure
-                  height: 230, // Height of the image container
-                );
-              },
+              fadeInDuration: const Duration(milliseconds: 200),
+              placeholder: (context, url) => Container(
+                color: Colors.grey[200],
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[200],
+              ),
             ),
 
             const SizedBox(height: 4),
